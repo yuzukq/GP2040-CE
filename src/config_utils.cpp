@@ -33,6 +33,7 @@
 #include "addons/wiiext.h"
 #include "addons/snes_input.h"
 #include "addons/input_macro.h"
+#include "addons/mod_shortcut.h"
 #include "addons/rotaryencoder.h"
 #include "addons/i2c_gpio_pcf8575.h"
 #include "addons/drv8833_rumble.h"
@@ -48,6 +49,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <initializer_list>
 #include <memory>
 
 #include "pico/platform.h"
@@ -1500,6 +1502,47 @@ void ConfigUtils::initUnsetPropertiesWithDefaults(Config& config)
         INIT_UNSET_PROPERTY(config.addonOptions.macroOptions.macroList[i], macroTriggerButton, 0);
         INIT_UNSET_PROPERTY_STR(config.addonOptions.macroOptions.macroList[i], macroLabel, "");
         INIT_UNSET_PROPERTY(config.addonOptions.macroOptions.macroList[i], deprecatedMacroTriggerPin, -1);
+    }
+
+    // gp2040-neo: Mod Shortcut add-on. The default preset is the one from the
+    // original request: Mod at neutral = L3 (Drive Parry), Mod with the lever at
+    // 4/1 = 623+X facing right, Mod with the lever at 6/3 = 421+X facing left.
+    INIT_UNSET_PROPERTY(config.addonOptions.modShortcutOptions, enabled, true);
+    INIT_UNSET_PROPERTY(config.addonOptions.modShortcutOptions, activePreset, 0);
+    if (config.addonOptions.modShortcutOptions.presets_count == 0) {
+        using namespace modshortcut;
+        ModShortcutPreset& preset = config.addonOptions.modShortcutOptions.presets[0];
+        preset = ModShortcutPreset_init_zero;
+        strncpy(preset.label, "Default", sizeof(preset.label) - 1);
+        preset.has_label = true;
+
+        auto addRule = [&preset](const char* label, uint32_t directionMask, ModShortcutMode mode,
+                                 std::initializer_list<uint32_t> steps) {
+            ModShortcutRule& rule = preset.rules[preset.rules_count++];
+            rule = ModShortcutRule_init_zero;
+            rule.has_enabled = true;
+            rule.enabled = true;
+            strncpy(rule.label, label, sizeof(rule.label) - 1);
+            rule.has_label = true;
+            rule.has_directionMask = true;
+            rule.directionMask = directionMask;
+            rule.has_mode = true;
+            rule.mode = mode;
+            for (uint32_t step : steps)
+                rule.steps[rule.steps_count++] = step;
+        };
+
+        addRule("Parry", directionBit(5), ModShortcutMode::MOD_SHORTCUT_HOLD,
+                { packStep(GAMEPAD_MASK_L3, 1) });
+        addRule("623X (P1 side)", directionBit(4) | directionBit(1), ModShortcutMode::MOD_SHORTCUT_SEQUENCE,
+                { packStep(GAMEPAD_MASK_DR, 2), packStep(GAMEPAD_MASK_DD, 2),
+                  packStep(GAMEPAD_MASK_DD | GAMEPAD_MASK_DR, 2),
+                  packStep(GAMEPAD_MASK_DD | GAMEPAD_MASK_DR | GAMEPAD_MASK_B3, 3) });
+        addRule("421X (P2 side)", directionBit(6) | directionBit(3), ModShortcutMode::MOD_SHORTCUT_SEQUENCE,
+                { packStep(GAMEPAD_MASK_DL, 2), packStep(GAMEPAD_MASK_DD, 2),
+                  packStep(GAMEPAD_MASK_DD | GAMEPAD_MASK_DL, 2),
+                  packStep(GAMEPAD_MASK_DD | GAMEPAD_MASK_DL | GAMEPAD_MASK_B3, 3) });
+        config.addonOptions.modShortcutOptions.presets_count = 1;
     }
 
     // addonOptions.tg16Options

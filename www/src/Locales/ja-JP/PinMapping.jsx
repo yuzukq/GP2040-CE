@@ -51,6 +51,7 @@ export default {
 		BUTTON_PRESS_MACRO_4: 'マクロ 4',
 		BUTTON_PRESS_MACRO_5: 'マクロ 5',
 		BUTTON_PRESS_MACRO_6: 'マクロ 6',
+		BUTTON_PRESS_MOD_SHORTCUT: 'Modショートカット',
 		CUSTOM_BUTTON_COMBO: 'マルチマッピングに割当済み',
 		BUTTON_PRESS_E1: '拡張 1',
 		BUTTON_PRESS_E2: '拡張 2',

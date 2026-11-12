@@ -67,6 +67,7 @@ export default {
 		BUTTON_PRESS_MACRO_4: 'Macro 4',
 		BUTTON_PRESS_MACRO_5: 'Macro 5',
 		BUTTON_PRESS_MACRO_6: 'Macro 6',
+		BUTTON_PRESS_MOD_SHORTCUT: 'Mod Shortcut',
 		CUSTOM_BUTTON_COMBO: 'Assigned to multi mapping',
 		BUTTON_PRESS_E1: 'Extra 1',
 		BUTTON_PRESS_E2: 'Extra 2',

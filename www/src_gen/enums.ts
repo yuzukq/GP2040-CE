@@ -322,7 +322,8 @@ export enum GpioAction {
     SUSTAIN_PROFILE_SLIDER_POSITION_5 = 135,
     SUSTAIN_PROFILE_SLIDER_POSITION_6 = 136,
     SUSTAIN_PROFILE_SLIDER_POSITION_7 = 137,
-    SUSTAIN_PROFILE_SLIDER_POSITION_8 = 138
+    SUSTAIN_PROFILE_SLIDER_POSITION_8 = 138,
+    BUTTON_PRESS_MOD_SHORTCUT = 200
 }
 
 export enum GpioDirection {
@@ -529,6 +530,11 @@ export enum PS4ControllerType {
     PS4_WHEEL = 6,
     PS4_ARCADESTICK = 7,
     PS4_HOTAS = 8
+}
+
+export enum ModShortcutMode {
+    MOD_SHORTCUT_SEQUENCE = 0,
+    MOD_SHORTCUT_HOLD = 1
 }
 
 export enum MacroType {

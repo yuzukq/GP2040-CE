@@ -858,6 +858,34 @@ message Macro
     optional bool showFrames = 10 [default = false];
 }
 
+// gp2040-neo: direction-aware Mod button shortcuts
+message ModShortcutRule
+{
+    optional bool enabled = 1;
+    optional string label = 2 [(nanopb).max_length = 24];
+    // Lever directions that select this rule, in numpad notation:
+    // bit n is set for direction n (1 = down-left ... 5 = neutral ... 9 = up-right).
+    optional uint32 directionMask = 3;
+    optional ModShortcutMode mode = 4;
+    // Each step is packed as (frames << 20) | inputMask, where inputMask uses the
+    // GAMEPAD_MASK_* button bits (0-15) and GAMEPAD_MASK_DU/DD/DL/DR (16-19),
+    // and frames is the hold length in 1/60 s frames (1-255).
+    repeated uint32 steps = 5 [(nanopb).max_count = 10];
+}
+
+message ModShortcutPreset
+{
+    optional string label = 1 [(nanopb).max_length = 32];
+    repeated ModShortcutRule rules = 2 [(nanopb).max_count = 6];
+}
+
+message ModShortcutOptions
+{
+    optional bool enabled = 1;
+    optional uint32 activePreset = 2;
+    repeated ModShortcutPreset presets = 3 [(nanopb).max_count = 8];
+}
+
 message MacroOptions
 {
     optional bool enabled = 1;
@@ -1005,6 +1033,9 @@ message AddonOptions
     optional HETriggerOptions heTriggerOptions = 30;
     optional ProfileSliderOptions profileSliderOptions = 31;
     optional AnalogADS1115Options analogADS1115Options = 32;
+
+    // gp2040-neo: field numbers >= 100 are reserved for fork-only add-ons.
+    optional ModShortcutOptions modShortcutOptions = 100;
 }
 
 message MigrationHistory

@@ -505,6 +505,29 @@ async function getMacroAddonOptions(setLoading) {
 	}
 }
 
+// gp2040-neo
+async function getModShortcutOptions(setLoading) {
+	setLoading(true);
+	try {
+		const response = await Http.get(`${baseUrl}/api/getModShortcutOptions`);
+		return response.data;
+	} catch (error) {
+		console.error(error);
+		return null;
+	} finally {
+		setLoading(false);
+	}
+}
+
+async function setModShortcutOptions(options) {
+	return Http.post(`${baseUrl}/api/setModShortcutOptions`, options)
+		.then((response) => response.data?.success !== false)
+		.catch((err) => {
+			console.error(err);
+			return false;
+		});
+}
+
 async function setMacroAddonOptions(options) {
 	return Http.post(
 		`${baseUrl}/api/setMacroAddonOptions`,
@@ -781,6 +804,8 @@ export default {
 	setAddonsOptions,
 	getMacroAddonOptions,
 	setMacroAddonOptions,
+	getModShortcutOptions,
+	setModShortcutOptions,
 	setPS4Options,
 	getWiiControls,
 	setWiiControls,

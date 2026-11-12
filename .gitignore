@@ -24,3 +24,8 @@ www/src_gen/enums.ts
 
 # Language Server config
 .clangd
+
+# gp2040-neo
+.deps/
+build-*/
+build-configure.log

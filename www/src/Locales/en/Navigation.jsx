@@ -9,6 +9,7 @@ export default {
 	'led-config-label': 'LED Configuration',
 	'links-label': 'Links',
 	'macro-label': 'Macros Configuration',
+	'mod-shortcut-label': 'Mod Shortcut Configuration',
 	'pin-mapping-label': 'GPIO Pin Mapping',
 	'boot-mode-mapping-label': 'Boot Mode Configuration',
 	'peripheral-mapping-label': 'Peripheral Mapping',

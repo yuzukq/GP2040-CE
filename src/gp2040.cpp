@@ -28,6 +28,7 @@
 #include "addons/spi_analog_ads1256.h"
 #include "addons/wiiext.h"
 #include "addons/input_macro.h"
+#include "addons/mod_shortcut.h"
 #include "addons/snes_input.h"
 #include "addons/rotaryencoder.h"
 #include "addons/i2c_gpio_pcf8575.h"
@@ -128,6 +129,7 @@ void GP2040::setup() {
 	addons.LoadAddon(new ReverseInput());
 	addons.LoadAddon(new TurboInput()); // Turbo overrides button states and should be close to the end
 	addons.LoadAddon(new InputMacro());
+	addons.LoadAddon(new ModShortcutAddon()); // gp2040-neo: overrides the dpad while a shortcut runs, keep last
 
 	// Use the old method of selecting input mode via mapped button, i.e. AFTER initializing GPIO
 	// pins with the currently active profile. Calling this even if the GPIO-mapped selection is

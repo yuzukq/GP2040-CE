@@ -64,6 +64,7 @@ class PinViewerScreen : public GPScreen {
             {GpioAction::BUTTON_PRESS_MACRO_4, "M4"},
             {GpioAction::BUTTON_PRESS_MACRO_5, "M5"},
             {GpioAction::BUTTON_PRESS_MACRO_6, "M6"},
+            {GpioAction::BUTTON_PRESS_MOD_SHORTCUT, "MOD"},
             {GpioAction::BUTTON_PRESS_A3, "A3"},
             {GpioAction::BUTTON_PRESS_A4, "A4"},
             {GpioAction::BUTTON_PRESS_E1, "E1"},

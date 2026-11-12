@@ -16,6 +16,7 @@ import PCF8575 from './Addons/PCF8575';
 import ReactiveLED from './Addons/ReactiveLED';
 import HETrigger from './Addons/HETrigger';
 import InputMacroAddon from './InputMacroAddon';
+import ModShortcut from './ModShortcut';
 import LayoutConfig from './LayoutConfig';
 import Proto from './Proto/Index';
 import LedConfigPage from './LedConfigPage';
@@ -38,6 +39,7 @@ export default {
 	WiiAddon,
 	Rotary,
 	InputMacroAddon,
+	ModShortcut,
 	LayoutConfig,
 	PCF8575,
 	ReactiveLED,

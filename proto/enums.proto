@@ -373,6 +373,10 @@ enum GpioAction
     SUSTAIN_PROFILE_SLIDER_POSITION_6 = 136;
     SUSTAIN_PROFILE_SLIDER_POSITION_7 = 137;
     SUSTAIN_PROFILE_SLIDER_POSITION_8 = 138;
+
+    // gp2040-neo: values >= 200 are reserved for fork-only actions so that
+    // future upstream additions do not collide with them.
+    BUTTON_PRESS_MOD_SHORTCUT    = 200;
 }
 
 enum GpioDirection
@@ -622,6 +626,14 @@ enum PS4ControllerType
     PS4_ARCADESTICK = 7;
     PS4_HOTAS = 8;
 }
+
+enum ModShortcutMode
+{
+    option (nanopb_enumopt).long_names = false;
+
+    MOD_SHORTCUT_SEQUENCE = 0; // play the steps once when the Mod button is pressed
+    MOD_SHORTCUT_HOLD = 1;     // output the first step for as long as the Mod button is held
+};
 
 enum MacroType
 {

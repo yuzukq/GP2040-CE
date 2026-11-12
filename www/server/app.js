@@ -1045,6 +1045,24 @@ app.get('/api/getHETriggerCalibrations', (req, res) => {
 	return res.send({ triggers });
 });
 
+// gp2040-neo
+app.get('/api/getModShortcutOptions', (req, res) => {
+	return res.send({
+		enabled: true,
+		activePreset: 0,
+		presets: [
+			{
+				label: 'Default',
+				rules: [
+					{ enabled: true, label: 'Parry', directionMask: 32, mode: 1, steps: [1049600] },
+					{ enabled: true, label: '623X (P1 side)', directionMask: 18, mode: 0, steps: [2621440, 2228224, 2752512, 3801092] },
+					{ enabled: true, label: '421X (P2 side)', directionMask: 72, mode: 0, steps: [2359296, 2228224, 2490368, 3538948] },
+				],
+			},
+		],
+	});
+});
+
 app.get('/api/getMacroAddonOptions', (req, res) => {
 	return res.send({
 		macroList: [

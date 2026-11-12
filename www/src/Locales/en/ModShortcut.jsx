@@ -1,0 +1,55 @@
+export default {
+	'header-text': 'Mod Shortcut',
+	'nav-label': 'Mod Shortcut Configuration',
+	description:
+		'When the Mod button is pressed, the lever position at that moment selects a rule. A rule either plays a short input sequence (e.g. 623+X) or holds an input while Mod is held (e.g. L3 for Drive Parry). Create one preset per character and choose which one the controller uses.',
+	'warning-not-assigned':
+		'No pin is mapped to "Mod Shortcut" yet. Assign it to your Mod button on the <pinLink>Pin Mapping</pinLink> page.',
+	enabled: 'Enabled',
+	'active-preset': 'Preset in use',
+	presets: 'Presets (characters)',
+	'in-use': 'In use',
+	untitled: '(untitled)',
+	'add-preset': 'Add',
+	'duplicate-preset': 'Duplicate',
+	'new-preset-label': 'Preset {{number}}',
+	'copy-of': '{{label}} copy',
+	'preset-label': 'Name',
+	'use-this-preset': 'Use this preset',
+	'delete-preset': 'Delete preset',
+	'delete-preset-confirm': 'Delete preset "{{label}}"?',
+	'rule-enabled': 'On',
+	'rule-label-placeholder': 'Rule name (e.g. Light DP)',
+	'mode-sequence': 'Sequence (once per press)',
+	'mode-hold': 'Hold (while Mod is held)',
+	'move-up': 'Move up (higher priority)',
+	'move-down': 'Move down',
+	mirror: 'Mirror copy',
+	'mirror-help':
+		'Add a copy with left and right swapped (for the other side of the screen)',
+	delete: 'Delete',
+	'trigger-label': 'Lever when Mod is pressed',
+	'steps-label': 'Output sequence',
+	'hold-output-label': 'Output while held',
+	notation: 'Notation',
+	'notation-error': 'Could not read "{{token}}"',
+	'too-many-steps': 'Up to {{max}} steps',
+	'step-direction': 'Direction',
+	'step-buttons': 'Buttons',
+	'step-frames': 'Length',
+	'add-step': 'Add step',
+	total: 'Total {{frames}}F (≈{{ms}} ms)',
+	'hold-help':
+		'Output continues as long as Mod is held. The lever and other buttons keep working.',
+	'add-rule': 'Add rule ({{count}}/{{max}})',
+	'warning-no-direction':
+		'Select at least one lever direction, otherwise this rule never runs.',
+	'warning-shadowed':
+		'Direction(s) {{directions}} are already used by a rule above and are ignored here.',
+	'warning-fully-shadowed':
+		'All directions of this rule are used by a rule above, so it never runs.',
+	unsaved: 'Unsaved changes',
+	saved: 'Saved. Reboot the controller to use the new settings.',
+	'notation-help':
+		'<strong>Notation</strong><br/>Numpad directions: 7 8 9 / 4 5 6 / 1 2 3 (5 = neutral).<br/><code>6 2 3 3+X:3</code> = 6, 2, 3, then 3 with X for 3 frames.<br/><code>623+X</code> is the same as <code>6 2 3+X</code>.<br/>Steps without <code>:N</code> last 2 frames (1F = 1/60 s). Button names follow the label setting (X, LB, ...) or GP2040 names (B3, L1, ...).<br/>Rules are checked from the top; the first match wins.',
+};

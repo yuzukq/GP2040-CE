@@ -296,6 +296,7 @@ src/addons/slider_socd.cpp
 src/addons/slider_profile.cpp
 src/addons/wiiext.cpp
 src/addons/input_macro.cpp
+src/addons/mod_shortcut.cpp
 src/addons/snes_input.cpp
 src/addons/tilt.cpp
 src/addons/spi_analog_ads1256.cpp

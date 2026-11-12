@@ -110,6 +110,13 @@ const Navigation = () => {
 						<NavDropdown.Item as={NavLink} eventKey={eventKey++} to="/macro">
 							{t('Navigation:macro-label')}
 						</NavDropdown.Item>
+						<NavDropdown.Item
+							as={NavLink}
+							eventKey={eventKey++}
+							to="/mod-shortcut"
+						>
+							{t('Navigation:mod-shortcut-label')}
+						</NavDropdown.Item>
 						<NavDropdown.Item as={NavLink} eventKey={eventKey++} to="/backup">
 							{t('Navigation:backup-label')}
 						</NavDropdown.Item>

@@ -38,6 +38,7 @@
 #include "lwip/def.h"
 #include "lwip/mem.h"
 #include "addons/input_macro.h"
+#include "addons/mod_shortcut.h"
 #include "addons/he_trigger.h"
 
 #define PATH_CGI_ACTION "/cgi/action"
@@ -48,7 +49,7 @@
 
 extern struct fsdata_file file__index_html[];
 
-const static char* spaPaths[] = { "/animation", "/backup", "/display-config", "/led-config", "/pin-mapping", "/settings", "/reset-settings", "/add-ons", "/macro", "/peripheral-mapping", "/boot-mode-mapping" };
+const static char* spaPaths[] = { "/animation", "/backup", "/display-config", "/led-config", "/pin-mapping", "/settings", "/reset-settings", "/add-ons", "/macro", "/mod-shortcut", "/peripheral-mapping", "/boot-mode-mapping" };
 const static char* excludePaths[] = { "/css", "/images", "/js", "/static" };
 const static uint32_t rebootDelayMs = 500;
 static string http_post_uri;
@@ -3165,6 +3166,119 @@ std::string getMacroAddonOptions()
     return serialize_json(doc);
 }
 
+// gp2040-neo: Mod Shortcut add-on
+// JSON layout:
+// { enabled, activePreset, presets: [ { label, rules: [ { enabled, label, directionMask, mode, steps: [packed] } ] } ] }
+static constexpr size_t MOD_SHORTCUT_JSON_CAPACITY =
+    JSON_OBJECT_SIZE(3) + JSON_ARRAY_SIZE(MOD_SHORTCUT_MAX_PRESETS)
+    + MOD_SHORTCUT_MAX_PRESETS * (JSON_OBJECT_SIZE(2) + sizeof(ModShortcutPreset::label)
+        + JSON_ARRAY_SIZE(MOD_SHORTCUT_MAX_RULES)
+        + MOD_SHORTCUT_MAX_RULES * (JSON_OBJECT_SIZE(5) + sizeof(ModShortcutRule::label)
+            + JSON_ARRAY_SIZE(MOD_SHORTCUT_MAX_STEPS)));
+// The whole document must also fit into one POST (parsed in place, zero-copy).
+static_assert(MOD_SHORTCUT_JSON_CAPACITY <= LWIP_HTTPD_POST_MAX_PAYLOAD_LEN,
+    "Mod Shortcut options do not fit into a single POST");
+
+static void copyJsonString(char* dest, size_t destSize, JsonVariantConst value)
+{
+    const char* str = value.as<const char*>();
+    if (str == nullptr) str = "";
+    strncpy(dest, str, destSize - 1);
+    dest[destSize - 1] = '\0';
+    // Do not cut a multi-byte UTF-8 character in half.
+    size_t len = strlen(dest);
+    if (len == destSize - 1 && (str[len] & 0xC0) == 0x80) {
+        while (len > 0 && (static_cast<uint8_t>(dest[len]) & 0xC0) == 0x80) len--;
+        dest[len] = '\0';
+    }
+}
+
+std::string setModShortcutOptions()
+{
+    DynamicJsonDocument doc(LWIP_HTTPD_POST_MAX_PAYLOAD_LEN);
+    DeserializationError error = deserializeJson(doc, http_post_payload, http_post_payload_len);
+    if (error) {
+        DynamicJsonDocument err(JSON_OBJECT_SIZE(2));
+        err["success"] = false;
+        err["error"] = error.c_str();
+        return serialize_json(err);
+    }
+
+    ModShortcutOptions& options = Storage::getInstance().getAddonOptions().modShortcutOptions;
+    JsonArrayConst presets = doc["presets"];
+    if (presets.isNull() || presets.size() == 0) {
+        DynamicJsonDocument err(JSON_OBJECT_SIZE(2));
+        err["success"] = false;
+        err["error"] = "at least one preset is required";
+        return serialize_json(err);
+    }
+
+    options.enabled = doc["enabled"] | true;
+    options.presets_count = 0;
+    for (JsonObjectConst presetJson : presets) {
+        if (options.presets_count >= MOD_SHORTCUT_MAX_PRESETS) break;
+        ModShortcutPreset& preset = options.presets[options.presets_count++];
+        preset = ModShortcutPreset_init_zero;
+        copyJsonString(preset.label, sizeof(preset.label), presetJson["label"]);
+
+        for (JsonObjectConst ruleJson : presetJson["rules"].as<JsonArrayConst>()) {
+            if (preset.rules_count >= MOD_SHORTCUT_MAX_RULES) break;
+            ModShortcutRule& rule = preset.rules[preset.rules_count++];
+            rule = ModShortcutRule_init_zero;
+            rule.enabled = ruleJson["enabled"] | false;
+            copyJsonString(rule.label, sizeof(rule.label), ruleJson["label"]);
+            // bits 1-9 only (numpad directions)
+            rule.directionMask = (ruleJson["directionMask"] | 0u) & 0x3FEu;
+            rule.mode = (ruleJson["mode"] | 0) == ModShortcutMode::MOD_SHORTCUT_HOLD
+                ? ModShortcutMode::MOD_SHORTCUT_HOLD : ModShortcutMode::MOD_SHORTCUT_SEQUENCE;
+            for (JsonVariantConst stepJson : ruleJson["steps"].as<JsonArrayConst>()) {
+                if (rule.steps_count >= MOD_SHORTCUT_MAX_STEPS) break;
+                const uint32_t step = stepJson | 0u;
+                rule.steps[rule.steps_count++] = modshortcut::packStep(
+                    step & modshortcut::STEP_INPUT_MASK, modshortcut::stepFrames(step));
+            }
+        }
+    }
+    const uint32_t activePreset = doc["activePreset"] | 0u;
+    options.activePreset = activePreset < options.presets_count ? activePreset : 0;
+
+    EventManager::getInstance().triggerEvent(new GPStorageSaveEvent(true));
+
+    DynamicJsonDocument ok(JSON_OBJECT_SIZE(1));
+    ok["success"] = true;
+    return serialize_json(ok);
+}
+
+std::string getModShortcutOptions()
+{
+    DynamicJsonDocument doc(MOD_SHORTCUT_JSON_CAPACITY);
+    const ModShortcutOptions& options = Storage::getInstance().getAddonOptions().modShortcutOptions;
+
+    doc["enabled"] = options.enabled;
+    doc["activePreset"] = options.activePreset;
+    JsonArray presets = doc.createNestedArray("presets");
+    for (pb_size_t p = 0; p < options.presets_count; p++) {
+        const ModShortcutPreset& preset = options.presets[p];
+        JsonObject presetJson = presets.createNestedObject();
+        presetJson["label"] = preset.label;
+        JsonArray rules = presetJson.createNestedArray("rules");
+        for (pb_size_t r = 0; r < preset.rules_count; r++) {
+            const ModShortcutRule& rule = preset.rules[r];
+            JsonObject ruleJson = rules.createNestedObject();
+            ruleJson["enabled"] = rule.enabled;
+            ruleJson["label"] = rule.label;
+            ruleJson["directionMask"] = rule.directionMask;
+            ruleJson["mode"] = static_cast<int>(rule.mode);
+            JsonArray steps = ruleJson.createNestedArray("steps");
+            for (pb_size_t s = 0; s < rule.steps_count; s++) {
+                steps.add(rule.steps[s]);
+            }
+        }
+    }
+
+    return serialize_json(doc);
+}
+
 std::string getFirmwareVersion()
 {
     const size_t capacity = JSON_OBJECT_SIZE(10);
@@ -3477,6 +3591,7 @@ static const std::pair<const char*, HandlerFuncPtr> handlerFuncs[] =
     { "/api/setProfileKeyMappings", setProfileKeyMappings },
     { "/api/setAddonsOptions", setAddonOptions },
     { "/api/setMacroAddonOptions", setMacroAddonOptions },
+    { "/api/setModShortcutOptions", setModShortcutOptions },
     { "/api/setPS4Options", setPS4Options },
     { "/api/setWiiControls", setWiiControls },
     { "/api/setSplashImage", setSplashImage },
@@ -3493,6 +3608,7 @@ static const std::pair<const char*, HandlerFuncPtr> handlerFuncs[] =
     { "/api/getAddonsOptions", getAddonOptions },
     { "/api/getWiiControls", getWiiControls },
     { "/api/getMacroAddonOptions", getMacroAddonOptions },
+    { "/api/getModShortcutOptions", getModShortcutOptions },
     { "/api/resetSettings", resetSettings },
     { "/api/getSplashImage", getSplashImage },
     { "/api/getFirmwareVersion", getFirmwareVersion },
