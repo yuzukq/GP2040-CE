@@ -26,7 +26,7 @@ git -C "$ROOT" submodule update --init --depth 1
 
 echo "== unit tests"
 "$ROOT/tests/mod_shortcut/run.sh"
-node --test "$ROOT/tests/mod_shortcut/"
+node --test "$ROOT/tests/mod_shortcut/*.test.ts"
 
 echo "== web configurator"
 cd "$ROOT/www"

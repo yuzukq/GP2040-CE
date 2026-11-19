@@ -73,7 +73,7 @@ scripts/build-neo.sh            # 初回は pico-sdk と ARM GCC を .deps/ に�
 
 ```sh
 tests/mod_shortcut/run.sh          # 判定ロジック（C++、PC上で実行）
-node --test tests/mod_shortcut/    # Web UIのデータ変換・コマンド表記
+node --test 'tests/mod_shortcut/*.test.ts'    # Web UIのデータ変換・コマンド表記
 ```
 
 ## upstreamからの変更点

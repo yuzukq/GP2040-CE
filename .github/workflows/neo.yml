@@ -36,7 +36,7 @@ jobs:
       - name: Unit tests
         run: |
           tests/mod_shortcut/run.sh
-          node --test tests/mod_shortcut/
+          node --test 'tests/mod_shortcut/*.test.ts'
 
       - name: Build web configurator
         working-directory: www

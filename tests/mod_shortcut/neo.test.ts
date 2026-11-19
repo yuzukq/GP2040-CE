@@ -1,4 +1,4 @@
-// Tests for www/src/Neo/neoModel.ts. Run: node --test tests/mod_shortcut/
+// Tests for www/src/Neo/neoModel.ts. Run: node --test 'tests/mod_shortcut/*.test.ts'
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
