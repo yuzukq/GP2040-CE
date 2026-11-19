@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GP2040 neo</title>
+<meta name="description" content="GP2040-CE のフォーク neo。設定画面を開く・ファームウェアを書き込む。">
+<style>
+/* Same terminal look as the controller's own neo screen:
+ * status line, boxed panels with titles in the border, amber accent. */
+:root {
+	--bg0: #f2efe6; --bg1: #e6e2d6; --bg2: #d6d1c3; --line: #b3ad9d;
+	--fg0: #1d1e1b; --fg1: #45463f; --fg2: #6f6f66;
+	--amber: #a65a08; --teal: #1f7068; --err: #b0352a; --on-accent: #f2efe6;
+	--mono: ui-monospace, 'JetBrains Mono', 'Cascadia Mono', 'SF Mono', Menlo, Consolas,
+		'BIZ UDGothic', 'Noto Sans Mono CJK JP', 'Osaka-Mono', 'MS Gothic', monospace;
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg0: #0e1012; --bg1: #181b1f; --bg2: #262b31; --line: #3a4149;
+		--fg0: #e8e3d6; --fg1: #b7b1a3; --fg2: #7f7b72;
+		--amber: #f0a24b; --teal: #73bdb5; --err: #ec6f5f; --on-accent: #0e1012;
+		color-scheme: dark;
+	}
+}
+:root[data-theme="dark"] {
+	--bg0: #0e1012; --bg1: #181b1f; --bg2: #262b31; --line: #3a4149;
+	--fg0: #e8e3d6; --fg1: #b7b1a3; --fg2: #7f7b72;
+	--amber: #f0a24b; --teal: #73bdb5; --err: #ec6f5f; --on-accent: #0e1012;
+	color-scheme: dark;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg0); color: var(--fg0); }
+body {
+	font: 15px/1.5 var(--mono);
+	font-variant-numeric: tabular-nums;
+	min-height: 100dvh;
+}
+a { color: inherit; text-underline-offset: 3px; }
+:focus-visible { outline: 1px dashed var(--amber); outline-offset: 2px; }
+kbd { font: inherit; font-weight: 700; background: var(--fg0); color: var(--bg0); padding: 0 .5ch; }
+code { font: inherit; background: var(--bg1); padding: 0 .5ch; }
+.dim { color: var(--fg2); }
+
+.status {
+	position: sticky; top: 0; z-index: 2;
+	display: flex; gap: 2ch; align-items: center; white-space: nowrap; overflow: hidden;
+	background: var(--fg0); color: var(--bg0);
+	padding-top: env(safe-area-inset-top, 0px);
+	padding-left: max(16px, env(safe-area-inset-left, 0px));
+	padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.status .brand { background: var(--amber); color: var(--on-accent); font-weight: 700; padding: 0 1ch; margin-left: -1ch; }
+.status .right { margin-left: auto; overflow: hidden; text-overflow: ellipsis; }
+
+main {
+	max-width: 92ch; margin: 0 auto;
+	padding-block: 2lh 3lh;
+	padding-left: max(16px, env(safe-area-inset-left, 0px));
+	padding-right: max(16px, env(safe-area-inset-right, 0px));
+	display: flex; flex-direction: column; gap: 1.5lh;
+}
+h1 { font-size: 1.6em; line-height: 1.2; color: var(--amber); text-wrap: balance; }
+.intro { color: var(--fg1); max-width: 70ch; }
+
+.panel { position: relative; border: 1px solid var(--line); padding: 1lh 2ch .75lh; display: flex; flex-direction: column; gap: .6lh; min-width: 0; }
+.panel > h2 {
+	position: absolute; top: -.75lh; left: 1.5ch;
+	font-size: inherit; background: var(--bg0); padding: 0 1ch;
+}
+.panel > h2 .num { color: var(--amber); margin-right: 1ch; }
+ol { list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: .3lh; }
+ol li { counter-increment: s; padding-left: 4ch; text-indent: -4ch; color: var(--fg1); }
+ol li::before { content: counter(s) ". "; color: var(--amber); display: inline-block; width: 4ch; text-indent: 0; }
+ol li b { color: var(--fg0); }
+
+.actions { display: flex; flex-wrap: wrap; gap: .5lh 2ch; align-items: center; }
+.btn {
+	display: inline-flex; align-items: center; gap: 1ch;
+	background: var(--bg2); color: var(--fg0); text-decoration: none;
+	padding: .25lh 2ch; font-weight: 700;
+}
+.btn:hover { background: var(--line); }
+.btn.primary { background: var(--amber); color: var(--on-accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn small { font-weight: 400; opacity: .8; }
+
+.fw { width: 100%; border-collapse: collapse; }
+.fw-wrap { overflow-x: auto; }
+.fw th { text-align: left; font-weight: 400; color: var(--fg2); border-bottom: 1px solid var(--line); padding: 0 2ch 0 0; }
+.fw td { padding: .3lh 2ch .3lh 0; border-bottom: 1px solid var(--bg1); vertical-align: top; }
+.fw td:last-child { white-space: nowrap; }
+.meta { color: var(--fg2); }
+.err { color: var(--err); }
+
+.note { color: var(--fg1); padding-left: 2ch; text-indent: -2ch; }
+.note::before { content: "> "; color: var(--amber); }
+
+footer { color: var(--fg2); display: flex; flex-wrap: wrap; gap: .25lh 3ch; }
+@media (max-width: 520px) {
+	.panel { padding-inline: 1.5ch; }
+	h1 { font-size: 1.35em; }
+}
+</style>
+</head>
+<body>
+<header class="status">
+	<span class="brand">neo</span>
+	<span>GP2040-CE fork</span>
+	<span class="right" id="status-right">Mod ショートカット / 日本語設定画面</span>
+</header>
+
+<main>
+	<div>
+		<h1>アケコンの設定と書き込み</h1>
+		<p class="intro">
+			neo は GP2040-CE のフォークです。レバー方向で出し分ける Mod ボタンと、日本語の設定画面を追加しています。
+			設定画面はコントローラー本体から配信されるので、ネットに繋がっていなくても使えます。
+		</p>
+	</div>
+
+	<section class="panel" aria-labelledby="open-title">
+		<h2 id="open-title"><span class="num">1</span>設定画面を開く</h2>
+		<ol>
+			<li>コントローラーの USB を抜く</li>
+			<li><b>Start</b> を押しながら USB を挿す（ボタン未配線なら、端子台の START と GND を繋いだまま挿す）</li>
+			<li>数秒待ってから、下のボタンで開く</li>
+		</ol>
+		<div class="actions">
+			<a class="btn primary" href="http://neo.local/">neo.local を開く</a>
+			<a class="btn" href="http://192.168.7.1/">192.168.7.1 を開く <small>開けないとき</small></a>
+		</div>
+		<p class="note">
+			<code>neo.local</code> は Mac・Windows 10/11 ならそのまま使えます。Linux で開けないときは avahi を入れるか、192.168.7.1 を使ってください。
+		</p>
+	</section>
+
+	<section class="panel" aria-labelledby="fw-title">
+		<h2 id="fw-title"><span class="num">2</span>最新のファームウェア</h2>
+		<p class="meta" id="fw-meta">ビルド情報を読み込み中…</p>
+		<div class="fw-wrap">
+			<table class="fw">
+				<thead><tr><th>基板</th><th>ファイル</th></tr></thead>
+				<tbody id="fw-rows">
+					<tr>
+						<td>Pico Fighting Board<br><span class="dim">たこた工房 typeC など</span></td>
+						<td><a class="btn" href="https://github.com/yuzukq/GP2040-CE/releases/download/neo-latest/neo_PicoFightingBoard.uf2">neo_PicoFightingBoard.uf2</a></td>
+					</tr>
+					<tr>
+						<td>Raspberry Pi Pico<br><span class="dim">Pico に手で配線した場合</span></td>
+						<td><a class="btn" href="https://github.com/yuzukq/GP2040-CE/releases/download/neo-latest/neo_Pico.uf2">neo_Pico.uf2</a></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<section class="panel" aria-labelledby="flash-title">
+		<h2 id="flash-title"><span class="num">3</span>書き込む</h2>
+		<ol>
+			<li>書き込みモードにする: neo の設定画面で <b>3 設定 → 書き込みモードで再起動</b>、または基板の <b>BOOT</b> ボタンを押しながら USB を挿す</li>
+			<li>PC に <b>RPI-RP2</b> というドライブが出る</li>
+			<li>ダウンロードした <code>.uf2</code> をそのドライブにコピーする</li>
+			<li>コピーが終わると自動で再起動して、コントローラーとして使える</li>
+		</ol>
+		<p class="note">保存した設定（ボタン配置・Mod のキャラ設定など）は書き込み後も残ります。</p>
+	</section>
+
+	<footer>
+		<a href="https://github.com/yuzukq/GP2040-CE/tree/neo">ソースコード</a>
+		<a href="https://github.com/yuzukq/GP2040-CE/blob/neo/NEO.md">使い方（NEO.md）</a>
+		<a href="https://github.com/yuzukq/GP2040-CE/releases/tag/neo-latest">リリース</a>
+		<span>元: <a href="https://gp2040-ce.info">GP2040-CE</a></span>
+	</footer>
+</main>
+
+<script>
+// Fill in build date and sizes from the rolling release; the static links
+// above already work if this fails.
+(async () => {
+	const meta = document.getElementById('fw-meta');
+	try {
+		const res = await fetch('https://api.github.com/repos/yuzukq/GP2040-CE/releases/tags/neo-latest', {
+			headers: { Accept: 'application/vnd.github+json' },
+		});
+		if (!res.ok) throw new Error(String(res.status));
+		const release = await res.json();
+		const date = new Date(release.published_at);
+		const when = date.toLocaleString('ja-JP', { dateStyle: 'medium', timeStyle: 'short' });
+		const commit = (release.name.match(/\(([0-9a-f]{7})\)/) || [])[1];
+		meta.textContent = `${when} ビルド` + (commit ? ` · コミット ${commit}` : '');
+		if (commit) {
+			const link = document.createElement('a');
+			link.href = `https://github.com/yuzukq/GP2040-CE/commit/${commit}`;
+			link.textContent = commit;
+			meta.textContent = `${when} ビルド · コミット `;
+			meta.append(link);
+		}
+		for (const asset of release.assets || []) {
+			const a = document.querySelector(`#fw-rows a[href$="/${asset.name}"]`);
+			if (!a) continue;
+			const size = document.createElement('small');
+			size.textContent = `${Math.round(asset.size / 1024)} KB`;
+			a.append(' ', size);
+		}
+	} catch (e) {
+		meta.textContent = 'ビルド情報を読み込めませんでした。下のリンクからダウンロードできます。';
+	}
+})();
+</script>
+</body>
+</html>

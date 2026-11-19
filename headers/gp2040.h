@@ -7,7 +7,8 @@
 #define GP2040_H_
 
 #ifndef WEB_CONFIG_HOSTNAME
-#define WEB_CONFIG_HOSTNAME "gp2040-ce"
+// gp2040-neo: the configurator is reachable at http://neo.local (mDNS)
+#define WEB_CONFIG_HOSTNAME "neo"
 #endif
 
 #include <map>

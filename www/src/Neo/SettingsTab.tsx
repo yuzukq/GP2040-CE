@@ -73,14 +73,18 @@ const Choices = ({
 	</div>
 );
 
+export const PORTAL_URL = 'https://yuzukq.github.io/GP2040-CE/';
+
 export default function SettingsTab({
 	options,
 	onChange,
 	firmware,
+	onBootsel,
 }: {
 	options: GamepadOptions;
 	onChange: (next: GamepadOptions) => void;
 	firmware: Record<string, string | undefined>;
+	onBootsel: () => void;
 }) {
 	const set = (key: string, value: number) => onChange({ ...options, [key]: value });
 	const inputMode = options.inputMode as number | undefined;
@@ -168,7 +172,7 @@ export default function SettingsTab({
 					<li>USB を抜く</li>
 					<li>Start を押しながら USB を挿す（未配線なら端子台の START と GND を繋いだまま挿す）</li>
 					<li>
-						ブラウザで <code>http://192.168.7.1</code> を開く
+						ブラウザで <code>http://neo.local</code> を開く（開けないときは <code>http://192.168.7.1</code>）
 					</li>
 				</ol>
 				<span className="section-label">ボタン名</span>
@@ -199,6 +203,20 @@ export default function SettingsTab({
 					</dt>
 					<dd>ボタン待ちをやめる</dd>
 				</dl>
+			</Panel>
+
+			<Panel title="ファームウェア更新">
+				<p className="lead">
+					最新の .uf2 は <a href={PORTAL_URL} target="_blank" rel="noreferrer">neo のページ</a>
+					からダウンロードできます。下のボタンで書き込みモードにすると、PC に RPI-RP2 ドライブが出るので、そこへ
+					.uf2 をコピーします。設定は消えません。
+				</p>
+				<div className="line">
+					<button type="button" size-="small" onClick={onBootsel}>
+						書き込みモードで再起動
+					</button>
+					<span className="dim">基板の BOOT ボタンを押しながら挿すのと同じです</span>
+				</div>
 			</Panel>
 
 			<Panel title="このコントローラー">

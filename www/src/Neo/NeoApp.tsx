@@ -15,7 +15,7 @@ import {
 import { changedPins } from './neoModel.ts';
 import PinsTab, { PinMappings } from './PinsTab';
 import ModTab from './ModTab';
-import SettingsTab, { GamepadOptions } from './SettingsTab';
+import SettingsTab, { GamepadOptions, PORTAL_URL } from './SettingsTab';
 import './neo.css';
 
 type Tab = 'pins' | 'mod' | 'settings';
@@ -25,6 +25,7 @@ const TABS: { id: Tab; key: string; name: string }[] = [
 	{ id: 'settings', key: '3', name: '設定' },
 ];
 const BOOT_MODE_GAMEPAD = 0;
+const BOOT_MODE_BOOTSEL = 2;
 const TAB_STORAGE = 'neo.tab';
 
 type FirmwareInfo = Record<string, string | undefined>;
@@ -60,7 +61,7 @@ export default function NeoApp() {
 	const [rulesVersion, setRulesVersion] = useState(0);
 	const [saving, setSaving] = useState(false);
 	const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
-	const [leaving, setLeaving] = useState<'ask' | 'rebooting' | 'done' | null>(null);
+	const [leaving, setLeaving] = useState<'ask' | 'rebooting' | 'done' | 'bootsel' | null>(null);
 	const messageTimer = useRef<number>();
 
 	const setTab = useCallback((next: Tab) => {
@@ -171,6 +172,16 @@ export default function NeoApp() {
 		setLeaving('done');
 	};
 
+	const bootsel = async () => {
+		if (isDirty) {
+			flashMessage('err', '保存していない変更があります。先に保存するか元に戻してください。');
+			return;
+		}
+		setLeaving('rebooting');
+		await WebApi.reboot(BOOT_MODE_BOOTSEL);
+		setLeaving('bootsel');
+	};
+
 	const leave = () => (isDirty ? setLeaving('ask') : reboot());
 
 	// Keyboard (htop style): 1-3 tabs, Ctrl/Cmd+S save, U revert, Q leave
@@ -229,6 +240,22 @@ export default function NeoApp() {
 					<h1>コントローラーとして再起動しました</h1>
 					<p className="lead">
 						このページは閉じて大丈夫です。また設定するときは、Start を押しながら USB を挿してください。
+					</p>
+				</div>
+			</div>
+		);
+	}
+
+	if (leaving === 'bootsel') {
+		return (
+			<div className="neo">
+				<div className="fullscreen">
+					<h1>書き込みモードで再起動しました</h1>
+					<p className="lead">
+						PC に RPI-RP2 というドライブが出ます。そこへ .uf2 ファイルをコピーすると書き込まれ、自動でコントローラーとして起動します。
+					</p>
+					<p className="lead">
+						.uf2 は <a href={PORTAL_URL}>{PORTAL_URL}</a> からダウンロードできます。
 					</p>
 				</div>
 			</div>
@@ -319,7 +346,12 @@ export default function NeoApp() {
 					/>
 				)}
 				{tab === 'settings' && (
-					<SettingsTab options={gamepad} onChange={setGamepad} firmware={firmware} />
+					<SettingsTab
+						options={gamepad}
+						onChange={setGamepad}
+						firmware={firmware}
+						onBootsel={bootsel}
+					/>
 				)}
 			</main>
 

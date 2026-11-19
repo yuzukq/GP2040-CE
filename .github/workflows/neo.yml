@@ -1,0 +1,140 @@
+# gp2040-neo: build the firmware on every push to the neo branch and publish
+# it as the rolling "neo-latest" release, which the neo page links to.
+name: neo firmware
+
+on:
+  push:
+    branches: ["neo"]
+    paths-ignore:
+      - "pages/**"
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: neo-firmware
+  cancel-in-progress: true
+
+env:
+  BUILD_TYPE: Release
+  RELEASE_TAG: neo-latest
+
+jobs:
+  web:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.1
+
+      - uses: actions/setup-node@v6.1.0
+        with:
+          node-version: "24.x"
+          cache: "npm"
+          cache-dependency-path: www/package-lock.json
+
+      - name: Unit tests
+        run: |
+          tests/mod_shortcut/run.sh
+          node --test tests/mod_shortcut/
+
+      - name: Build web configurator
+        working-directory: www
+        run: |
+          npm ci --no-audit --no-fund
+          CI=false npm run build
+
+      - uses: actions/upload-artifact@v6.0.0
+        with:
+          name: fsData
+          path: lib/httpd/fsdata.c
+          if-no-files-found: error
+
+  build:
+    needs: web
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        board: [PicoFightingBoard, Pico]
+    steps:
+      - uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.31.x"
+
+      - uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: true
+
+      # The rolling release tag must not become the firmware version
+      - name: Drop release tag
+        run: git tag -d "$RELEASE_TAG" || true
+
+      - uses: carlosperate/arm-none-eabi-gcc-action@v1
+        with:
+          release: "15.3.Rel1"
+
+      - uses: actions/checkout@v6.0.1
+        with:
+          repository: raspberrypi/pico-sdk
+          ref: 2.3.1
+          path: pico-sdk
+          submodules: true
+
+      - uses: actions/download-artifact@v7.0.0
+        with:
+          name: fsData
+          path: lib/httpd/
+
+      - name: Configure
+        run: >
+          PICO_SDK_PATH=$GITHUB_WORKSPACE/pico-sdk
+          GP2040_BOARDCONFIG=${{ matrix.board }}
+          SKIP_WEBBUILD=TRUE
+          cmake -B build -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+
+      - name: Build
+        run: GP2040_BOARDCONFIG=${{ matrix.board }} cmake --build build --config $BUILD_TYPE --parallel "$(nproc)"
+
+      - name: Rename
+        run: |
+          mkdir dist
+          cp build/GP2040-CE_*_${{ matrix.board }}.uf2 dist/neo_${{ matrix.board }}.uf2
+
+      - uses: actions/upload-artifact@v6.0.0
+        with:
+          name: uf2-${{ matrix.board }}
+          path: dist/neo_${{ matrix.board }}.uf2
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v7.0.0
+        with:
+          pattern: uf2-*
+          path: dist
+          merge-multiple: true
+
+      - name: Publish neo-latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release delete "$RELEASE_TAG" --cleanup-tag --yes || true
+          short=${GITHUB_SHA::7}
+          cat > notes.md <<EOF
+          neo の最新ビルド（コミット ${short}）。
+
+          - neo_PicoFightingBoard.uf2: Pico Fighting Board（たこた工房 typeC など）
+          - neo_Pico.uf2: Raspberry Pi Pico に手で配線した場合
+
+          書き込み: BOOT ボタンを押しながら USB を挿す（または neo 画面「3 設定」→「書き込みモードで再起動」）→ RPI-RP2 ドライブに .uf2 をコピー。設定は消えません。
+          EOF
+          gh release create "$RELEASE_TAG" dist/*.uf2 \
+            --target "$GITHUB_SHA" \
+            --title "neo latest (${short})" \
+            --notes-file notes.md \
+            --latest
