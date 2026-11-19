@@ -209,15 +209,19 @@ export type ButtonNames = Partial<Record<string, string>>;
 const normalise = (name: string) =>
 	name.trim().toLowerCase().replace(/\s+/g, '');
 
-const buttonLookup = (buttonNames: ButtonNames) => {
+// `buttonNames` may be a list of label sets; earlier sets win.
+const buttonLookup = (buttonNames: ButtonNames | ButtonNames[]) => {
 	const lookup = new Map<string, number>();
 	for (const { key, mask } of SHORTCUT_BUTTONS) {
 		lookup.set(normalise(key), mask);
 	}
 	// Label names win over GP2040 names (e.g. XInput "B" is B2)
-	for (const { key, mask } of SHORTCUT_BUTTONS) {
-		const label = buttonNames[key];
-		if (label && label !== '-') lookup.set(normalise(label), mask);
+	const sets = Array.isArray(buttonNames) ? buttonNames : [buttonNames];
+	for (const names of [...sets].reverse()) {
+		for (const { key, mask } of SHORTCUT_BUTTONS) {
+			const label = names[key];
+			if (label && label !== '-') lookup.set(normalise(label), mask);
+		}
 	}
 	return lookup;
 };
@@ -249,7 +253,7 @@ export type ParseResult = { steps: Step[]; error?: string };
 
 export const parseSteps = (
 	text: string,
-	buttonNames: ButtonNames,
+	buttonNames: ButtonNames | ButtonNames[],
 	defaultFrames = 2,
 ): ParseResult => {
 	const lookup = buttonLookup(buttonNames);
@@ -288,7 +292,7 @@ export const parseSteps = (
 
 export const tryParseSteps = (
 	text: string,
-	buttonNames: ButtonNames,
+	buttonNames: ButtonNames | ButtonNames[],
 	defaultFrames = 2,
 ): ParseResult => {
 	try {

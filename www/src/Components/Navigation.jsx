@@ -52,7 +52,7 @@ const Navigation = () => {
 	return (
 		<Navbar collapseOnSelect expand="md" fixed="top">
 			<Navbar.Brand title={`GP2040-CE ${t('Navigation:home-label')}`}>
-				<Nav.Link as={NavLink} to="/" eventKey={eventKey++}>
+				<Nav.Link as={NavLink} to="/home" eventKey={eventKey++}>
 					<img
 						src="images/logo.png"
 						className="title-logo"
@@ -63,6 +63,9 @@ const Navigation = () => {
 			<Navbar.Toggle aria-controls="responsive-navbar-nav" />
 			<Navbar.Collapse id="basic-navbar-nav">
 				<Nav className="me-auto nav-menu">
+					{/* gp2040-neo: back to the dedicated Mod Shortcut GUI */}
+					{/* full page load: the neo GUI uses its own stylesheet */}
+					<Nav.Link href="/">neo</Nav.Link>
 					<Nav.Link as={NavLink} to="/settings" eventKey={eventKey++}>
 						{t('Navigation:settings-label')}
 					</Nav.Link>

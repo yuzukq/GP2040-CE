@@ -1,0 +1,973 @@
+/* gp2040-neo GUI. Terminal look built on WebTUI (https://github.com/webtui/webtui).
+ * Loaded only on the neo page; the stock configurator has its own stylesheet.
+ *
+ * Layout: one terminal "window": a status line on top, numbered tabs, boxed
+ * panels, and an htop-style key bar pinned to the bottom.
+ */
+@layer base, utils, components;
+
+@import '@webtui/css/base.css';
+@import '@webtui/css/utils/box.css';
+@import '@webtui/css/components/button.css';
+@import '@webtui/css/components/input.css';
+@import '@webtui/css/components/typography.css';
+@import '@webtui/css/components/badge.css';
+@import '@webtui/css/components/switch.css';
+@import '@webtui/css/components/spinner.css';
+
+/* Tokens ------------------------------------------------------------------
+ * Dark first: a cabinet CRT with amber phosphor. Punches read amber, kicks
+ * teal, the same split most arcade panels use for their two button rows. */
+:root {
+	--background0: #0e1012;
+	--background1: #181b1f;
+	--background2: #262b31;
+	--background3: #3a4149;
+	--foreground0: #e8e3d6;
+	--foreground1: #b7b1a3;
+	--foreground2: #7f7b72;
+	--amber: #f0a24b;
+	--teal: #73bdb5;
+	--ok: #9bc46d;
+	--warn: #e6c35c;
+	--err: #ec6f5f;
+	--on-accent: #0e1012;
+
+	--font-family: ui-monospace, 'JetBrains Mono', 'Cascadia Mono', 'SF Mono', Menlo, Consolas,
+		'BIZ UDGothic', 'Noto Sans Mono CJK JP', 'Osaka-Mono', 'MS Gothic', monospace;
+	--font-size: 15px;
+	--line-height: 1.45;
+	--box-border-color: var(--background3);
+	color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+	:root:not([data-theme='dark']) {
+		--background0: #f2efe6;
+		--background1: #e6e2d6;
+		--background2: #d6d1c3;
+		--background3: #b3ad9d;
+		--foreground0: #1d1e1b;
+		--foreground1: #45463f;
+		--foreground2: #6f6f66;
+		--amber: #a65a08;
+		--teal: #1f7068;
+		--ok: #47731a;
+		--warn: #7f6000;
+		--err: #b0352a;
+		--on-accent: #f2efe6;
+		color-scheme: light;
+	}
+}
+:root[data-theme='light'] {
+	--background0: #f2efe6;
+	--background1: #e6e2d6;
+	--background2: #d6d1c3;
+	--background3: #b3ad9d;
+	--foreground0: #1d1e1b;
+	--foreground1: #45463f;
+	--foreground2: #6f6f66;
+	--amber: #a65a08;
+	--teal: #1f7068;
+	--ok: #47731a;
+	--warn: #7f6000;
+	--err: #b0352a;
+	--on-accent: #f2efe6;
+	color-scheme: light;
+}
+
+/* Base -------------------------------------------------------------------- */
+
+html,
+body {
+	background: var(--background0);
+	color: var(--foreground0);
+	word-break: normal;
+	overflow-wrap: anywhere;
+}
+body::before {
+	content: '';
+	position: fixed;
+	inset: 0 0 auto;
+	height: env(safe-area-inset-top, 0px);
+	z-index: 30;
+	background: var(--foreground0);
+}
+.neo {
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	font-variant-numeric: tabular-nums;
+}
+.neo :focus-visible {
+	outline: 1px dashed var(--amber);
+	outline-offset: 1px;
+}
+.neo a {
+	color: var(--foreground0);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.neo kbd {
+	font-family: var(--font-family);
+	font-weight: 700;
+	background: var(--foreground0);
+	color: var(--background0);
+	padding: 0 0.5ch;
+}
+.dim {
+	color: var(--foreground2);
+}
+.amber {
+	color: var(--amber);
+}
+.teal {
+	color: var(--teal);
+}
+.ok {
+	color: var(--ok);
+}
+.warn {
+	color: var(--warn);
+}
+.err {
+	color: var(--err);
+}
+@media (prefers-reduced-motion: reduce) {
+	.neo [is-='spinner'] {
+		animation: none;
+	}
+}
+
+/* Buttons: WebTUI's default is a 3-line block; the GUI mostly uses the
+ * one-line form, inverted when it is the main action on screen. */
+.neo button {
+	cursor: pointer;
+	white-space: nowrap;
+}
+.neo button[size-='small'] {
+	height: auto;
+	min-height: 1lh;
+	background: var(--background2);
+	color: var(--foreground0);
+}
+.neo button[size-='small']:hover:not(:disabled) {
+	background: var(--background3);
+}
+.neo button[size-='small'][variant-='primary'] {
+	background: var(--amber);
+	color: var(--on-accent);
+	font-weight: 700;
+}
+.neo button[size-='small'][variant-='danger'] {
+	background: transparent;
+	color: var(--err);
+	box-shadow: inset 0 0 0 1px var(--err);
+}
+.neo button[size-='small'][variant-='ghost'] {
+	background: transparent;
+	color: var(--foreground1);
+}
+.neo button[size-='small'][variant-='ghost']:hover:not(:disabled) {
+	color: var(--foreground0);
+	background: var(--background1);
+}
+.neo button:disabled {
+	opacity: 0.45;
+	text-decoration: none;
+}
+.neo button[aria-pressed='true'],
+.neo button[aria-selected='true'] {
+	font-weight: 700;
+}
+
+.neo select,
+.neo input[type='text'],
+.neo input:not([type]) {
+	font: inherit;
+	color: var(--foreground0);
+	background: var(--background1);
+	border: none;
+	height: 1lh;
+	padding: 0 1ch;
+	min-width: 0;
+}
+.neo select {
+	cursor: pointer;
+	appearance: none;
+	padding-right: 3ch;
+	background-image: linear-gradient(var(--foreground2), var(--foreground2));
+	background-repeat: no-repeat;
+	background-size: 0 0;
+	position: relative;
+}
+.select-wrap {
+	position: relative;
+	display: inline-flex;
+	max-width: 100%;
+}
+.select-wrap::after {
+	content: '▾';
+	position: absolute;
+	right: 1ch;
+	pointer-events: none;
+	color: var(--foreground2);
+}
+.select-wrap select {
+	max-width: 100%;
+}
+.neo input.is-invalid {
+	box-shadow: inset 0 -2px 0 var(--err);
+}
+
+/* Window chrome --------------------------------------------------------- */
+
+.statusline {
+	position: sticky;
+	top: env(safe-area-inset-top, 0px);
+	z-index: 20;
+	display: flex;
+	align-items: center;
+	gap: 0 2ch;
+	padding-left: max(1ch, env(safe-area-inset-left, 0px));
+	padding-right: max(1ch, env(safe-area-inset-right, 0px));
+	background: var(--foreground0);
+	color: var(--background0);
+	white-space: nowrap;
+	overflow: hidden;
+}
+.statusline .brand {
+	font-weight: 700;
+	background: var(--amber);
+	color: var(--on-accent);
+	padding: 0 1ch;
+	margin-left: -1ch;
+}
+.statusline .board {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+}
+.statusline .state {
+	margin-left: auto;
+	font-weight: 700;
+}
+.statusline .state.is-dirty {
+	background: var(--warn);
+	color: var(--on-accent);
+	padding: 0 1ch;
+	margin-right: -1ch;
+}
+
+.tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 1ch;
+	padding-block: 0.5lh 0;
+	padding-left: max(16px, env(safe-area-inset-left, 0px));
+	padding-right: max(16px, env(safe-area-inset-right, 0px));
+	border-bottom: 1px solid var(--background3);
+}
+.tabs button {
+	background: none;
+	color: var(--foreground1);
+	padding: 0 1ch;
+	height: 1lh;
+}
+.tabs button .num {
+	color: var(--amber);
+	margin-right: 1ch;
+}
+.tabs button[aria-selected='true'] {
+	background: var(--background2);
+	color: var(--foreground0);
+	box-shadow: inset 0 -2px 0 var(--amber);
+}
+.tabs button .count {
+	color: var(--warn);
+	margin-left: 1ch;
+}
+
+.screen {
+	flex: 1;
+	width: 100%;
+	max-width: 132ch;
+	margin: 0 auto;
+	padding-block: 1lh 5lh;
+	padding-left: max(16px, env(safe-area-inset-left, 0px));
+	padding-right: max(16px, env(safe-area-inset-right, 0px));
+	display: flex;
+	flex-direction: column;
+	gap: 1lh;
+}
+
+/* Panels: a box with its title cut into the top border. */
+.panel {
+	min-width: 0;
+}
+.panel[box-] {
+	padding: 1lh 2ch 0.5lh;
+}
+.panel > .panel-title {
+	position: absolute;
+	top: 0;
+	left: 2ch;
+	right: 2ch;
+	display: flex;
+	align-items: center;
+	gap: 1ch;
+	height: 1lh;
+	pointer-events: none;
+}
+.panel > .panel-title > * {
+	pointer-events: auto;
+}
+.panel-title h2 {
+	font-size: inherit;
+	background: var(--background0);
+	padding: 0 1ch;
+	color: var(--foreground0);
+}
+.panel-title .panel-right {
+	margin-left: auto;
+	background: var(--background0);
+	padding: 0 1ch;
+	display: flex;
+	gap: 1ch;
+}
+.panel.is-focus {
+	--box-border-color: var(--amber);
+}
+.panel-body {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5lh;
+	padding-block: 0.5lh;
+	min-width: 0;
+}
+.lead {
+	color: var(--foreground1);
+	max-width: 78ch;
+}
+
+.line {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25lh 1ch;
+}
+.line.spread {
+	justify-content: space-between;
+}
+.label {
+	color: var(--foreground2);
+	min-width: 12ch;
+}
+
+.msg {
+	display: block;
+	padding-left: 2ch;
+	text-indent: -2ch;
+}
+.msg::before {
+	content: '! ';
+	font-weight: 700;
+}
+.msg.is-warn {
+	color: var(--warn);
+}
+.msg.is-err {
+	color: var(--err);
+}
+.msg.is-info {
+	color: var(--foreground1);
+}
+.msg.is-info::before {
+	content: '> ';
+	color: var(--amber);
+}
+
+.keybar {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 20;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0 2ch;
+	padding-left: max(1ch, env(safe-area-inset-left, 0px));
+	padding-right: max(1ch, env(safe-area-inset-right, 0px));
+	padding-bottom: env(safe-area-inset-bottom, 0px);
+	background: var(--background1);
+	border-top: 1px solid var(--background3);
+}
+.keybar button {
+	background: none;
+	height: 1lh;
+	padding: 0;
+	gap: 0;
+	color: var(--foreground1);
+}
+.keybar button kbd {
+	margin-right: 0.5ch;
+}
+.keybar button:hover:not(:disabled) {
+	color: var(--foreground0);
+}
+.keybar button.is-hot kbd {
+	background: var(--warn);
+}
+.keybar button.is-hot {
+	color: var(--foreground0);
+	font-weight: 700;
+}
+.keybar .keybar-msg {
+	margin-left: auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+}
+
+.confirm {
+	position: sticky;
+	top: calc(env(safe-area-inset-top, 0px) + 1lh);
+	z-index: 15;
+	background: var(--warn);
+	color: var(--on-accent);
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.25lh 2ch;
+	padding-block: 0.25lh;
+	padding-left: max(16px, env(safe-area-inset-left, 0px));
+	padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.confirm button[size-='small'] {
+	background: var(--on-accent);
+	color: var(--foreground0);
+}
+.confirm button[size-='small'][variant-='ghost'] {
+	background: transparent;
+	color: var(--on-accent);
+	box-shadow: inset 0 0 0 1px var(--on-accent);
+}
+
+.fullscreen {
+	min-height: 80dvh;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: center;
+	gap: 1lh;
+	max-width: 70ch;
+	margin: 0 auto;
+	padding-left: max(16px, env(safe-area-inset-left, 0px));
+	padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.fullscreen h1 {
+	color: var(--amber);
+}
+
+/* Arcade panel (button layout tab) -------------------------------------- */
+
+.panel-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(30ch, 40ch);
+	gap: 1lh 3ch;
+	align-items: start;
+}
+@media (max-width: 860px) {
+	.panel-layout {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.stick {
+	overflow-x: auto;
+	padding-bottom: 0.5lh;
+}
+.stick-inner {
+	display: grid;
+	grid-template-columns: auto auto;
+	gap: 1lh 4ch;
+	align-items: center;
+	width: max-content;
+	margin: 0 auto;
+}
+.stick-system {
+	grid-column: 1 / -1;
+	display: flex;
+	gap: 1ch;
+	justify-content: flex-end;
+}
+.stick-lever {
+	display: grid;
+	grid-template-columns: repeat(3, 8ch);
+	grid-template-rows: repeat(3, 3lh);
+	place-items: center;
+}
+.stick-lever .ball {
+	color: var(--foreground2);
+	font-size: 1.6em;
+	line-height: 1;
+}
+.stick-buttons {
+	display: grid;
+	grid-template-columns: repeat(4, 9ch);
+	gap: 0.5lh 1ch;
+}
+/* Vewlix-style: the first column sits a little lower */
+.stick-buttons > :nth-child(4n + 1) {
+	translate: 0 0.5lh;
+}
+.stick-extra {
+	grid-column: 1 / -1;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5lh 1ch;
+	justify-content: center;
+	padding-top: 0.5lh;
+	border-top: 1px dashed var(--background3);
+}
+
+.cap {
+	--cap-color: var(--foreground1);
+	--box-border-color: var(--background3);
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 8ch;
+	height: 3lh;
+	padding: 0;
+	background: none;
+	color: var(--foreground0);
+	line-height: 1.1;
+	gap: 0;
+}
+.cap.is-wide {
+	width: auto;
+	min-width: 9ch;
+	padding: 0 1.5ch;
+}
+.cap .cap-name {
+	font-weight: 700;
+	color: var(--cap-color);
+}
+.cap .cap-pin {
+	font-size: 0.85em;
+	color: var(--foreground2);
+}
+.cap.is-punch {
+	--cap-color: var(--amber);
+}
+.cap.is-kick {
+	--cap-color: var(--teal);
+}
+.cap.is-missing {
+	--box-border-color: var(--err);
+}
+.cap.is-missing .cap-pin {
+	color: var(--err);
+}
+.cap.is-changed .cap-pin::after {
+	content: '*';
+	color: var(--warn);
+}
+.cap:hover {
+	--box-border-color: var(--foreground1);
+}
+.cap[aria-pressed='true'] {
+	--box-border-color: var(--amber);
+	background: var(--background2);
+}
+.cap.is-flash {
+	animation: neo-flash 0.9s steps(2, jump-none) 2;
+}
+@keyframes neo-flash {
+	from {
+		background: var(--amber);
+	}
+	to {
+		background: transparent;
+	}
+}
+.cap.is-flash .cap-name,
+.cap.is-flash .cap-pin {
+	color: inherit;
+}
+
+.inspector .big {
+	font-size: 1.4em;
+	font-weight: 700;
+	line-height: 1.2;
+}
+.capture {
+	display: flex;
+	align-items: center;
+	gap: 1ch;
+	padding: 0.5lh 1ch;
+	background: var(--background1);
+	box-shadow: inset 2px 0 0 var(--amber);
+}
+
+/* Pin table */
+.table-wrap {
+	overflow-x: auto;
+}
+.pins {
+	width: 100%;
+	border-collapse: collapse;
+}
+.pins th {
+	text-align: left;
+	color: var(--foreground2);
+	font-weight: 400;
+	padding: 0 2ch 0 0;
+	border-bottom: 1px solid var(--background3);
+}
+.pins td {
+	padding: 0.15lh 2ch 0.15lh 0;
+	border-bottom: 1px solid var(--background1);
+	white-space: nowrap;
+}
+.pins tr.is-locked td {
+	color: var(--foreground2);
+}
+.pins tr.is-selected td {
+	background: var(--background1);
+}
+.pins tr.is-changed td:first-child::after {
+	content: ' *';
+	color: var(--warn);
+}
+.pins .gp {
+	color: var(--foreground1);
+}
+
+/* Mod tab ------------------------------------------------------------------ */
+
+.presets {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25lh 1ch;
+}
+.presets button {
+	background: var(--background1);
+	color: var(--foreground1);
+	height: 1lh;
+	padding: 0 1ch;
+}
+.presets button[aria-selected='true'] {
+	background: var(--foreground0);
+	color: var(--background0);
+}
+.presets .star {
+	color: var(--amber);
+	margin-right: 0.5ch;
+}
+.presets button[aria-selected='true'] .star {
+	color: var(--amber);
+}
+
+.rule {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 0.5lh 3ch;
+}
+@media (max-width: 720px) {
+	.rule {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+.rule.is-off .rule-main,
+.rule.is-off .rule-when {
+	opacity: 0.5;
+}
+.rule-head {
+	grid-column: 1 / -1;
+}
+.rule-head input {
+	flex: 1 1 20ch;
+}
+.rule-when,
+.rule-main {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5lh;
+	min-width: 0;
+}
+.rule-foot {
+	grid-column: 1 / -1;
+	border-top: 1px dashed var(--background3);
+	padding-top: 0.25lh;
+}
+.section-label {
+	color: var(--foreground2);
+}
+.section-label b {
+	color: var(--amber);
+	font-weight: 700;
+}
+
+.lever {
+	display: grid;
+	grid-template-columns: repeat(3, 5ch);
+	gap: 0.25lh 0.5ch;
+}
+.lever button {
+	height: 2lh;
+	padding: 0;
+	background: var(--background1);
+	color: var(--foreground1);
+	flex-direction: column;
+	line-height: 1;
+}
+.lever button small {
+	font-size: 0.7em;
+	color: var(--foreground2);
+}
+.lever button[aria-pressed='true'] {
+	background: var(--amber);
+	color: var(--on-accent);
+}
+.lever button[aria-pressed='true'] small {
+	color: inherit;
+}
+.lever button.is-warn[aria-pressed='true'] {
+	background: var(--warn);
+}
+
+.segment {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 0 1ch;
+}
+.segment button {
+	background: none;
+	color: var(--foreground1);
+	height: 1lh;
+	padding: 0;
+}
+.segment button::before {
+	content: '( ) ';
+	color: var(--foreground2);
+	white-space: pre;
+}
+.segment button[aria-pressed='true'] {
+	color: var(--foreground0);
+}
+.segment button[aria-pressed='true']::before {
+	content: '(*) ';
+	color: var(--amber);
+}
+
+.templates {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25lh 1ch;
+}
+.templates button {
+	background: var(--background1);
+	color: var(--foreground0);
+	height: 1lh;
+	padding: 0 1ch;
+}
+.templates button small {
+	color: var(--foreground2);
+	margin-left: 1ch;
+}
+.templates button[aria-pressed='true'] {
+	box-shadow: inset 0 -2px 0 var(--amber);
+	background: var(--background2);
+}
+
+.pad {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25lh;
+}
+.pad-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25lh 1ch;
+}
+.pad-row.is-kick {
+	padding-left: 2ch;
+}
+.pad button {
+	height: 1lh;
+	padding: 0 1ch;
+	background: var(--background1);
+	color: var(--foreground1);
+}
+.pad button small {
+	color: var(--foreground2);
+	margin-left: 0.5ch;
+}
+.pad button[aria-pressed='true'] {
+	background: var(--amber);
+	color: var(--on-accent);
+	font-weight: 700;
+}
+.pad .is-kick button[aria-pressed='true'] {
+	background: var(--teal);
+}
+.pad button[aria-pressed='true'] small {
+	color: inherit;
+}
+
+/* Frame strip: one cell per 1/60 s. */
+.preview {
+	background: var(--background1);
+	padding: 0.5lh 1ch;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25lh;
+	min-width: 0;
+}
+.command {
+	font-weight: 700;
+	font-size: 1.15em;
+}
+.command .btn {
+	color: var(--amber);
+}
+.frames {
+	display: flex;
+	flex-wrap: wrap;
+	overflow: hidden;
+}
+.frames span {
+	width: 2ch;
+	text-align: center;
+	color: var(--foreground1);
+	border-right: 1px solid var(--background0);
+	background: var(--background2);
+}
+.frames span.is-press {
+	background: var(--amber);
+	color: var(--on-accent);
+}
+.frames span.is-first {
+	box-shadow: inset 2px 0 0 var(--foreground2);
+}
+
+.steps {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5lh;
+}
+.step {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25lh;
+	padding-left: 1ch;
+	box-shadow: inset 2px 0 0 var(--background3);
+}
+.stepper {
+	display: inline-flex;
+	align-items: center;
+}
+.stepper button {
+	width: 3ch;
+	height: 1lh;
+	padding: 0;
+	background: var(--background2);
+	color: var(--foreground0);
+}
+.stepper output {
+	min-width: 9ch;
+	text-align: center;
+}
+
+/* Settings tab ------------------------------------------------------------- */
+
+.choices {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(26ch, 1fr));
+	gap: 0.25lh 2ch;
+}
+.choices button {
+	justify-content: flex-start;
+	background: none;
+	height: auto;
+	min-height: 1lh;
+	padding: 0;
+	color: var(--foreground1);
+	text-align: left;
+	white-space: normal;
+	align-items: flex-start;
+}
+.choices button::before {
+	content: '( ) ';
+	white-space: pre;
+	color: var(--foreground2);
+	flex: none;
+}
+.choices button[aria-pressed='true'] {
+	color: var(--foreground0);
+}
+.choices button[aria-pressed='true']::before {
+	content: '(*) ';
+	color: var(--amber);
+}
+.choices button small {
+	display: block;
+	color: var(--foreground2);
+}
+
+.kv {
+	display: grid;
+	grid-template-columns: max-content minmax(0, 1fr);
+	gap: 0.1lh 3ch;
+}
+.kv dt {
+	color: var(--foreground2);
+}
+
+.help ol,
+.help ul {
+	padding-left: 0;
+}
+.help li {
+	color: var(--foreground1);
+}
+
+/* Switch: make "on" readable at a glance */
+.neo input[type='checkbox'][is-='switch'] {
+	--switch-track-color: var(--background2);
+	--switch-thumb-color: var(--foreground2);
+	cursor: pointer;
+}
+.neo input[type='checkbox'][is-='switch']:checked {
+	--switch-track-color: var(--amber);
+	--switch-thumb-color: var(--on-accent);
+}
+.neo input[type='checkbox'][is-='switch']:checked::after {
+	--switch-thumb-color: var(--on-accent);
+}
+.neo label:has(input[is-='switch']) {
+	cursor: pointer;
+	align-items: center;
+}
+
+/* Phones: lever above the buttons, slightly smaller cells */
+@media (max-width: 640px) {
+	.stick {
+		font-size: 13px;
+	}
+	.stick-inner {
+		grid-template-columns: auto;
+		justify-items: center;
+	}
+	.stick-system {
+		justify-content: center;
+	}
+	.panel[box-] {
+		padding: 1lh 1ch 0.5lh;
+	}
+}

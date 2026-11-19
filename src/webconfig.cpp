@@ -49,7 +49,7 @@
 
 extern struct fsdata_file file__index_html[];
 
-const static char* spaPaths[] = { "/animation", "/backup", "/display-config", "/led-config", "/pin-mapping", "/settings", "/reset-settings", "/add-ons", "/macro", "/mod-shortcut", "/peripheral-mapping", "/boot-mode-mapping" };
+const static char* spaPaths[] = { "/animation", "/backup", "/display-config", "/led-config", "/pin-mapping", "/settings", "/reset-settings", "/add-ons", "/macro", "/mod-shortcut", "/home", "/peripheral-mapping", "/boot-mode-mapping" };
 const static char* excludePaths[] = { "/css", "/images", "/js", "/static" };
 const static uint32_t rebootDelayMs = 500;
 static string http_post_uri;
