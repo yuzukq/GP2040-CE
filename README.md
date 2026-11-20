@@ -1,90 +1,71 @@
-<p align="center">
-  <a href="https://gp2040-ce.info">
-    <img alt="GP2040-CE" src="https://raw.githubusercontent.com/OpenStickCommunity/Site/main/docs/assets/images/gp2040-ce-logo.png" />
-  </a>
-</p>
-
-<p align="center">
-  Multi-Platform Gamepad Firmware for RP2040
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/github/license/OpenStickCommunity/GP2040-CE" />
-  <img src="https://img.shields.io/github/actions/workflow/status/OpenStickCommunity/GP2040-CE/cmake.yml" />
-  <br />
-  <img src="https://img.shields.io/badge/inputlag.science-0.86%20ms-blue" />
-  <img src="https://img.shields.io/badge/MiSTer%20latency-0.765%20ms-blue" />
-</p>
+# GP2040 neo
 
 <p>
-  GP2040-CE (Community Edition) is a gamepad firmware for the Raspberry Pi Pico and other boards based on the RP2040 microcontrollers that combines multi-platform compatibility, low latency and a rich feature set to provide endless customization possibilities without sacrificing performance.
+  <a href="https://github.com/yuzukq/GP2040-CE/actions/workflows/neo.yml"><img alt="neo firmware" src="https://img.shields.io/github/actions/workflow/status/yuzukq/GP2040-CE/neo.yml?branch=neo&label=build" /></a>
+  <a href="https://github.com/yuzukq/GP2040-CE/releases/tag/neo-latest"><img alt="release" src="https://img.shields.io/badge/release-neo--latest-orange" /></a>
+  <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-blue" /></a>
 </p>
 
-<p>
-  GP2040-CE is compatible with PC, PS3, PS4, PS5, Nintendo Switch, Xbox One, Steam Deck, MiSTer and Android.
-</p>
+[GP2040-CE](https://github.com/OpenStickCommunity/GP2040-CE) をもとにした、アケコン用の個人向けファームウェアです。レバーの方向で出す入力を切り替える **Mod ボタン**と、**日本語の設定画面**を追加しています。
 
-## Links
+> [!NOTE]
+> これは GP2040-CE の**非公式フォーク**で、OpenStickCommunity とは関係ありません。neo で起きた不具合や neo の機能についての質問を、GP2040-CE 本家の Issues や Discord に送らないでください。
 
-[Downloads](https://gp2040-ce.info/downloads) | [Installation](https://gp2040-ce.info/installation) | [Wiring](https://gp2040-ce.info/controller-build/wiring) | [Usage](https://gp2040-ce.info/usage) | [FAQ](https://gp2040-ce.info/faq/faq-general) | [GitHub](https://github.com/OpenStickCommunity/GP2040-CE)
+## 本家との違い
 
-Full documentation can be found at [https://gp2040-ce.info](https://gp2040-ce.info)
+- **Mod ショートカット**: Mod ボタンを押した瞬間のレバー方向（テンキー表記）で、出す入力を切り替えます。
+  - シーケンス: 押すたびにコマンドを 1 回再生します（例: ガード中に Mod で 623+弱P）。
+  - ホールド: Mod を押している間だけ入力を足します（例: L3 でドライブパリィ）。
+  - キャラごとのプリセットを 8 個まで持てます。1P 側と 2P 側のルールは反転して作れます。
+- **neo 設定画面**: コントローラー本体が配信する、ターミナル風の日本語設定画面です。
+  - 1 配置: 実機のボタンを押してピンを割り当てる / どのピンか確かめる
+  - 2 Mod: 技テンプレート（昇龍・波動・竜巻・真空…）からルールを作る
+  - 3 設定: 入力モード、SOCD、起動時のモード切り替え、書き込みモードで再起動
+- **`http://neo.local`** で設定画面が開きます（`http://192.168.7.1` も使えます）。本家の設定画面は `http://neo.local/home` に残しているので、LED・ディスプレイなどの設定はそちらで行います。
+- `neo` ブランチに push すると、GitHub Actions がビルドしてリリース [`neo-latest`](https://github.com/yuzukq/GP2040-CE/releases/tag/neo-latest) を差し替えます。
 
-## Features
+入力モード（XInput / Switch / PS4 / PS5 など）、SOCD、低遅延といった基本機能は GP2040-CE と同じです。
 
-- Select from 14 input modes including X-Input, Nintendo Switch, Playstation 4/5, Xbox One, D-Input, and Keyboard
-- Input latency average of 0.76ms in Xinput and 0.91ms for Playstation 5.
-- Multiple SOCD cleaning modes - Up Priority (a.k.a. Stickless), Neutral, and Second Input Priority.
-- Left and Right stick emulation via D-pad inputs as well as dedicated toggle switches.
-- Dual direction via D-pad + LS/RS.
-- Reversed input via a button.
-- [Turbo and Turbo LED](https://gp2040-ce.info/add-ons/turbo) with selectable speed
-- Per-button RGB LED support.
-- PWM Player indicator LED support (XInput only).
-- Multiple LED profiles support.
-- Support for 128x64 monochrome I2C displays - SSD1306, SH1106, and SH1107 compatible.
-- Custom startup splash screen and easy image upload via web configuration.
-- Support for passive buzzer speaker (3v or 5v).
-- [Built-in, embedded web configuration](https://gp2040-ce.info/web-configurator) - No download required!
+## はじめかた
 
-Visit the [GP2040-CE Usage](https://gp2040-ce.info/usage) page for more details.
+ダウンロード、設定画面へのリンク、書き込み手順は **https://yuzukq.github.io/GP2040-CE/** にまとめています。
 
-## Performance
+1. 基板に合う `.uf2` をダウンロードします。
+   | ファイル | 基板 |
+   | --- | --- |
+   | `neo_PicoFightingBoard.uf2` | Pico Fighting Board（たこた工房 typeC など） |
+   | `neo_Pico.uf2` | Raspberry Pi Pico に手で配線した場合 |
+2. 書き込みモードにします。基板の BOOT ボタンを押しながら USB を挿すか、neo の設定画面で「3 設定 → 書き込みモードで再起動」を選びます。
+3. PC に出てくる `RPI-RP2` ドライブに `.uf2` をコピーします。コピーが終わると自動で再起動します。
+4. 設定するときは、**Start を押しながら** USB を挿してから `http://neo.local` を開きます。
 
-Input latency is tested using the methodology outlined at [WydD's inputlag.science website](https://inputlag.science/controller/methodology), using the default 1000 Hz (1 ms) polling rate in the firmware. You can read more about the setup we use to conduct latency testing [HERE](https://github.com/OpenStickCommunity/Site/blob/main/latency_testing/README.md) if you are interested in testing for yourself or would just like to know more about the devices used to do the testing.
+保存した設定（ボタン配置や Mod のキャラ設定）は、ファームウェアを書き直しても残ります。
 
-| Version | Mode    | Poll Rate | Min     | Max     | Avg     | Stdev   | % on time | %1f skip | %2f skip |
-| ------- | ------- | --------- | ------- | ------- | ------- | ------- | --------- | -------- | -------- |
-| v0.7.12 | Xinput  | 1 ms      | 0.45 ms | 1.28 ms | 0.76 ms | 0.24 ms | 98.48%    | 1.52%    | 0%       |
-| v0.7.12 | Switch  | 1 ms      | 0.41 ms | 1.22 ms | 0.72 ms | 0.24 ms | 98.53%    | 1.47%    | 0%       |
-| v0.7.12 | HID USB | 1 ms      | 0.42 ms | 1.25 ms | 0.73 ms | 0.24 ms | 98.52%    | 1.48%    | 0%       |
-| v0.7.12 | PS3     | 1 ms      | 0.52 ms | 1.46 ms | 0.83 ms | 0.24 ms | 98.37%    | 1.63%    | 0%       |
-| v0.7.12 | PS4     | 1 ms      | 0.55 ms | 2.33 ms | 0.90 ms | 0.32 ms | 98.19%    | 1.81%    | 0%       |
-| v0.7.12 | PS5     | 1 ms      | 0.55 ms | 2.38 ms | 0.91 ms | 0.32 ms | 98.18%    | 1.82%    | 0%       |
+Mod ショートカットの詳しい使い方、Raspberry Pi Pico の配線表、制限事項は [NEO.md](NEO.md) にあります。
 
-Full results can be found in the [GP2040-CE v0.7.12 Firmware Latency Test Results](https://github.com/OpenStickCommunity/Site/raw/main/latency_testing/GP2040-CE_Firmware_Latency_Test_Results_v0.7.12.xlsx) .xlsx Sheet.
+## ビルド
 
-Results from v0.7.11 can be found [HERE](https://github.com/OpenStickCommunity/Site/raw/main/latency_testing/GP2040-CE_Firmware_Latency_Test_Results_v0.7.11.xlsx). Previous results can be found in the `latency_testing` folder.
+```sh
+scripts/build-neo.sh [BOARD]    # 省略時は Pico。初回は pico-sdk と ARM GCC を .deps/ にダウンロード
+```
 
-## Support
+テストだけを実行する場合:
 
-If you would like to discuss features, issues or anything else related to GP2040-CE please [create an issue](https://github.com/OpenStickCommunity/GP2040-CE/issues/new) or join the [OpenStick GP2040-CE Discord](https://discord.gg/k2pxhke7q8) support channel.
+```sh
+tests/mod_shortcut/run.sh                      # 判定ロジック（C++、PC 上で実行）
+node --test 'tests/mod_shortcut/*.test.ts'     # Web UI のデータ変換・コマンド表記
+```
 
-## Contributing
+本家の更新を取り込むときは `git fetch upstream && git merge upstream/main` を使います。neo の設定は本家と衝突しない番号で保存しているので、本家のファームとの間で書き換えても設定は読めます。変更したファイルの一覧は [NEO.md](NEO.md#upstreamからの変更点) にあります。
 
-Want to help improve GP2040-CE? There are a bunch of ways to contribute!
+## ライセンスとクレジット
 
-### Community Participation
+[MIT License](LICENSE) です。元になった GP2040-CE の著作権表示（OpenStickCommunity、Jason Skuby）は LICENSE にそのまま残しています。
 
-Have an idea for a cool new feature, or just want to discuss some technical details with the developers? Join the [OpenStick GP2040-CE Discord](https://discord.gg/k2pxhke7q8) server to participate in our active and ever-growing community!
+neo は [GP2040-CE](https://github.com/OpenStickCommunity/GP2040-CE)（[gp2040-ce.info](https://gp2040-ce.info)）の上に作られています。GP2040-CE の開発者とコミュニティに感謝します。設定画面の見た目には [WebTUI](https://github.com/webtui/webtui)（MIT）を使っています。
 
-### Pull Requests
-
-Pull requests are welcome and encouraged for enhancements, bug fixes and documentation updates.
-
-Please respect the coding style of the file(s) you are working in, and enforce the use of the `.editorconfig` file when present.
-
-## Acknowledgements
+<details>
+<summary>GP2040-CE の謝辞（本家 README より）</summary>
 
 - [FeralAI](https://github.com/FeralAI) for building [GP2040](https://github.com/FeralAI/GP2040) and laying the foundation for this community project
 - Ha Thach's excellent [TinyUSB library](https://github.com/hathach/tinyusb) examples
@@ -103,3 +84,5 @@ Please respect the coding style of the file(s) you are working in, and enforce t
 - [Santroller](https://github.com/Santroller/Santroller) for the code necessary to have Xbox 360 run without a dongle
 - [Dycool](https://github.com/Dycool)'s [NS-PC-Control](https://github.com/Dycool/NS-PC-Control) for the technical details on wired Joy-Con, NES and Famicom controller identities
 - [PVS-Studio](https://pvs-studio.com/en/pvs-studio/?utm_source=website&utm_medium=github&utm_campaign=open_source) for static code analysis
+
+</details>
